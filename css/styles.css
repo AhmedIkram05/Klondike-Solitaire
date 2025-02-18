@@ -1,0 +1,117 @@
+:root {
+    --card-width: 100px;
+    --card-height: 140px;
+    --pile-spacing: 20px;
+}
+
+body {
+    background-color: #135e30;
+    font-family: Arial, sans-serif;
+    user-select: none;
+}
+
+.game-container {
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 20px;
+}
+
+.top-row {
+    display: grid;
+    grid-template-columns: repeat(7, var(--card-width));
+    gap: var(--pile-spacing);
+    margin-bottom: var(--pile-spacing);
+}
+
+.tableau {
+    display: grid;
+    grid-template-columns: repeat(7, var(--card-width));
+    gap: var(--pile-spacing);
+}
+
+.pile {
+    width: var(--card-width);
+    height: var(--card-height);
+    border: 2px solid #ffffff40;
+    border-radius: 8px;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.stock, .waste, .foundation {
+    border-style: dashed;
+}
+
+.card {
+    width: var(--card-width);
+    height: var(--card-height);
+    border-radius: 8px;
+    position: absolute;
+    background-color: white;
+    box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 5px;
+    box-sizing: border-box;
+    transition: transform 0.2s, top 0.2s;
+    font-weight: bold;
+}
+
+.card.back {
+    background-image: repeating-linear-gradient(45deg, #606dbc, #606dbc 10px, #465298 10px, #465298 20px);
+}
+
+.card.red {
+    color: #D40000;
+}
+
+.card.black {
+    color: #000000;
+}
+
+.dragging-cards {
+    position: fixed;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.card .rank-top, .card .rank-bottom {
+    display: flex;
+    align-items: center;
+}
+
+.card .suit {
+    font-size: 20px;
+    margin-left: 2px;
+}
+
+.controls {
+    margin: 20px 0;
+    text-align: center;
+}
+
+.btn {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #f0f0f0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 0 10px;
+}
+
+.btn:hover {
+    background-color: #e0e0e0;
+}
+
+.tableau-pile {
+    min-height: 500px;
+}
+
+.center {
+    font-size: 30px;
+    text-align: center;
+    line-height: 1;
+    width: 100%;
+}
