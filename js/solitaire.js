@@ -13,6 +13,8 @@ class Solitaire {
         this.dragStartPos = {x: 0, y: 0};
         this.dragSourcePile = null;
         this.dragSourceIndex = null;
+        this.movesSinceLastCheck = 0;
+        this.noMovesCheckThreshold = 3;  // Check for no moves after this many unsuccessful attempts
         
         this.initDeck();
         this.setupEventListeners();
@@ -38,6 +40,17 @@ class Solitaire {
         document.getElementById('new-game').addEventListener('click', () => this.newGame());
         document.getElementById('undo').addEventListener('click', () => this.undo());
         document.getElementById('stock').addEventListener('click', () => this.drawFromStock());
+        
+        // Game over modal close button
+        document.querySelector('.close').addEventListener('click', () => {
+            document.getElementById('game-over-modal').style.display = 'none';
+        });
+        
+        // Play again button
+        document.getElementById('play-again').addEventListener('click', () => {
+            document.getElementById('game-over-modal').style.display = 'none';
+            this.newGame();
+        });
         
         // Setup drop targets
         document.querySelectorAll('.foundation, .tableau-pile, .waste').forEach(pile => {
@@ -325,7 +338,19 @@ class Solitaire {
             // Save state for undo
             this.saveState();
             this.render();
+            
+            // Reset the counter since a successful move was made
+            this.movesSinceLastCheck = 0;
+            
+            // Check for win
             this.checkForWin();
+        } else {
+            // Increment counter for unsuccessful move attempts
+            this.movesSinceLastCheck++;
+            if (this.movesSinceLastCheck >= this.noMovesCheckThreshold) {
+                this.checkForNoMoves();
+                this.movesSinceLastCheck = 0;
+            }
         }
     }
     
@@ -384,6 +409,14 @@ class Solitaire {
                 this.waste = [];
                 this.stock.forEach(card => card.faceUp = false);
                 this.saveState();
+                this.movesSinceLastCheck = 0;  // Reset counter after recycling
+            } else {
+                // If stock and waste are both empty, check if any moves are possible
+                this.movesSinceLastCheck++;
+                if (this.movesSinceLastCheck >= this.noMovesCheckThreshold) {
+                    this.checkForNoMoves();
+                    this.movesSinceLastCheck = 0;
+                }
             }
         } else {
             // Draw one card from stock to waste
@@ -391,6 +424,7 @@ class Solitaire {
             card.faceUp = true;
             this.waste.push(card);
             this.saveState();
+            this.movesSinceLastCheck = 0;  // Reset counter after drawing
         }
         this.render();
     }
@@ -401,6 +435,105 @@ class Solitaire {
     
     undo() {
         // Implement undo functionality
+    }
+    
+    checkForWin() {
+        // Game is won when all foundations have 13 cards each
+        const isWin = this.foundations.every(foundation => foundation.length === 13);
+        
+        if (isWin) {
+            this.showGameOverMessage(true);
+        }
+        
+        return isWin;
+    }
+    
+    checkForNoMoves() {
+        // Only check if we still have cards to play
+        if (this.stock.length > 0 || this.waste.length > 0) {
+            return false;
+        }
+        
+        // Check if any card can be moved to foundations
+        const allCards = [
+            ...this.waste,
+            ...this.foundations.flat(),
+            ...this.tableau.flat().filter(card => card.faceUp)
+        ];
+        
+        for (const card of allCards) {
+            // Check if card can be moved to any foundation
+            for (let i = 0; i < 4; i++) {
+                if (this.canAddToFoundation(card, i)) {
+                    return false;
+                }
+            }
+        }
+        
+        // Check if cards can be moved between tableau piles
+        for (let sourceIdx = 0; sourceIdx < 7; sourceIdx++) {
+            const sourcePile = this.tableau[sourceIdx];
+            for (let cardIdx = 0; cardIdx < sourcePile.length; cardIdx++) {
+                if (!sourcePile[cardIdx].faceUp) continue;
+                
+                const cards = sourcePile.slice(cardIdx);
+                
+                for (let targetIdx = 0; targetIdx < 7; targetIdx++) {
+                    if (sourceIdx === targetIdx) continue;
+                    if (this.canAddToTableau(cards[0], targetIdx)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        
+        // If we get here, no moves are possible
+        // Check if we've won (all cards in foundations) or lost (some cards not in foundations)
+        const isWin = this.foundations.flat().length === 52;
+        
+        if (!isWin) {
+            this.showGameOverMessage(false);
+        }
+        
+        return true;
+    }
+    
+    canAddToFoundation(card, foundationIndex) {
+        const foundation = this.foundations[foundationIndex];
+        
+        if (foundation.length === 0) {
+            return card.rank === 1; // Can place Ace on empty foundation
+        }
+        
+        const topCard = foundation[foundation.length - 1];
+        return card.suit === topCard.suit && card.rank === topCard.rank + 1;
+    }
+    
+    canAddToTableau(card, tableauIndex) {
+        const tableau = this.tableau[tableauIndex];
+        
+        if (tableau.length === 0) {
+            return card.rank === 13; // Can place King on empty tableau
+        }
+        
+        const topCard = tableau[tableau.length - 1];
+        return card.color !== topCard.color && card.rank === topCard.rank - 1;
+    }
+    
+    showGameOverMessage(isWin) {
+        const modal = document.getElementById('game-over-modal');
+        const title = document.getElementById('game-over-title');
+        const message = document.getElementById('game-over-message');
+        
+        if (isWin) {
+            title.textContent = 'Congratulations!';
+            message.textContent = 'Well done! You completed the game successfully!';
+        } else {
+            title.textContent = 'Game Over';
+            message.textContent = 'No more moves are possible. You were not able to complete the game.';
+        }
+        
+        modal.style.display = 'block';
     }
 }
 
